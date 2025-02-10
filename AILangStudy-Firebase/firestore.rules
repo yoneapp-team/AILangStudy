@@ -1,0 +1,20 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /articles/{articleId} {
+      // 作成者本人のみ読み書き可能
+      allow read, write: if request.auth != null && 
+        (
+          // 新規作成時
+          !exists(/databases/$(database)/documents/articles/$(articleId)) ||
+          // 既存ドキュメントへのアクセス時は作成者本人のみ
+          resource.data.uid == request.auth.uid
+        );
+      
+      // バリデーションルール
+      allow create: if request.resource.data.uid == request.auth.uid;
+      allow update: if request.resource.data.uid == resource.data.uid;  // uidは変更不可
+    }
+  }
+}
