@@ -2,6 +2,7 @@ import { onCall } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { VertexAI } from "@google-cloud/vertexai";
 import * as logger from "firebase-functions/logger";
+import { SchemaType } from "@google-cloud/vertexai/build/src/types";
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -207,6 +208,63 @@ export const analyzeText = onCall(async (request) => {
       generationConfig: {
         maxOutputTokens: 2048,
         temperature: 0.9,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            vocabulary: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  word: { type: SchemaType.STRING },
+                  reading: { type: SchemaType.STRING },
+                  meaning: { type: SchemaType.STRING },
+                  example: { type: SchemaType.STRING },
+                  exampleTranslation: { type: SchemaType.STRING },
+                  germanOrigin: { type: SchemaType.STRING },
+                },
+                required: ["word", "meaning"],
+              },
+            },
+            grammar: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  pattern: { type: SchemaType.STRING },
+                  explanation: { type: SchemaType.STRING },
+                  example: { type: SchemaType.STRING },
+                  exampleTranslation: { type: SchemaType.STRING },
+                },
+                required: ["pattern", "explanation"],
+              },
+            },
+            contextAnalysis: { type: SchemaType.STRING },
+            notes: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING },
+            },
+            exercises: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  type: { type: SchemaType.STRING },
+                  question: { type: SchemaType.STRING },
+                  options: {
+                    type: SchemaType.ARRAY,
+                    items: { type: SchemaType.STRING },
+                  },
+                  answer: { type: SchemaType.STRING },
+                  explanation: { type: SchemaType.STRING },
+                },
+                required: ["type", "question", "answer"],
+              },
+            },
+          },
+          required: ["vocabulary", "grammar", "contextAnalysis", "notes", "exercises"],
+        },
       },
     });
     logger.info("Received analysis response from Gemini API");
